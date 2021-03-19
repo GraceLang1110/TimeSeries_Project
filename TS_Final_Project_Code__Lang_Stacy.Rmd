@@ -1,0 +1,31 @@
+---
+title: "Time Series Study on CO2 Emissions and Hybrid Car Sales Project"
+author: "Grace Lang & Jules Stacy"
+date: "3/18/2021"
+output: html_document
+---
+# Data sources: 
+* Hybrid Car sales: https://afdc.energy.gov/data/10301
+* CO2 Emissions by Country: https://data.worldbank.org/indicator/EN.ATM.CO2E.PC?view=map
+
+```{r setup, include=FALSE}
+library(tswge)
+library(dplyr)
+
+car <- read.csv("../TimeSeries_Project/HybridCar.csv")
+
+#Remove years that are majority blank
+car <- car[40:60,]
+
+#Rename column to something easier
+names(car)[names(car) == "CO2.emissions..metric.tons.per.capita."] <- "CO2"
+```
+
+```{r}
+plotts.wge(car$CO2)
+plotts.wge(car$TotalSales)
+
+```
+
+
+
