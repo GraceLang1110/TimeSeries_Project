@@ -8,14 +8,28 @@ output: html_document
 * Hybrid Car sales: https://afdc.energy.gov/data/10301
 * CO2 Emissions by Country: https://data.worldbank.org/indicator/EN.ATM.CO2E.PC?view=map
 
+# EDA / Notes for Initial Presentation: 
+a.	Identify yourself and your partner (if applicable).  Goal 1
+b.	Describe the Data Set / Time Series (Who, What, When, Where, Why and How) Goal 1
+c.	Stationary / Non-Stationary Goal 2
+d.	ACFs and Spectral Densities just to explore Goal 2
+e.	At least 2 (total) candidate ARMA / ARIMA models (univariate) Goal 2
+    a.	The models in factored form or at least separate the stationary and non-
+stationary factors with standard deviation or variance of the white noise.
+    b.	AIC
+    c.	ASE (Rolling window)
+    d.	Visualization of Forecasts (Short and Long Term / State and National) 
+f.	Strategy / Plans for the rest of the analysis.
+
+
 ```{r setup, include=FALSE}
 library(tswge)
 library(dplyr)
 
-car <- read.csv("../TimeSeries_Project/HybridCar.csv")
+car_orig <- read.csv("../TimeSeries_Project/HybridCar.csv")
 
 #Remove years that are majority blank
-car <- car[40:60,]
+car <- car_orig[40:60,]
 
 #Rename column to something easier
 names(car)[names(car) == "CO2.emissions..metric.tons.per.capita."] <- "CO2"
@@ -24,6 +38,9 @@ names(car)[names(car) == "CO2.emissions..metric.tons.per.capita."] <- "CO2"
 ```{r}
 plotts.wge(car$CO2)
 plotts.wge(car$TotalSales)
+
+car_1 <- car_orig[40:57,]
+plotts.sample.wge(car_1$CO2)
 
 ```
 
