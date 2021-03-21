@@ -1,0 +1,40 @@
+field,category,description,non-missing,Labels,Min,Median,Max
+case_id,id,unique uswtdb id,67814,n/a,3000001,3048243,3108638
+faa_ors,id,faa digital obstacle file (dof) for obstacle repository system (ors),60518,n/a,n/a,n/a,n/a
+faa_asn,id,faa obstruction evaluation - airport airspace analysis (oe-aaa) aeronautical study number (asn),61772,n/a,n/a,n/a,n/a
+usgs_pr_id,id,usgs id from prior turbine dataset,39635,n/a,1,28305,49135
+eia_id,id,eia plant id from eia form 860,58500,n/a,90,57357,65270
+t_state,location,state where turbine is located,67814,n/a,n/a,n/a,n/a
+t_county,location,county where turbine is located,67814,n/a,n/a,n/a,n/a
+t_fips,location,state and county fips where turbine is located,67814,n/a,n/a,n/a,n/a
+p_name,project characteristic,project name,67814,n/a,n/a,n/a,n/a
+p_year,project characteristic,year project became operational,67078,n/a,1981,2012,2020
+p_tnum,project characteristic,number of turbines in project,67814,n/a,1,87,731
+p_cap,project characteristic,project capacity (MW),61404,n/a,0.05,150,525.02
+t_manu,turbine characteristic,turbine original equipment manufacturer,60486,n/a,n/a,n/a,n/a
+t_model,turbine characteristic,turbine model,60050,n/a,n/a,n/a,n/a
+t_cap,turbine characteristic,turbine capacity (kW),60369,n/a,50,1800,6000
+t_hh,turbine characteristic,turbine hub height (meters),59435,n/a,19,80,131
+t_rd,turbine characteristic,turbine rotor diameter (meters),59716,n/a,11,91.5,154
+t_rsa,turbine characteristic,turbine rotor swept area (meters^2),59716,n/a,95.03,6575.55,18626.5
+t_ttlh,turbine characteristic,turbine total height - calculated (meters),59435,n/a,30.4,126.2,199.6
+retrofit,turbine characteristic,indicator of whether the turbine has been partially retrofitted after initial construction,67814,n/a,0,0,1
+retrofit_year,turbine characteristic,year in which turbine was retrofitted,4348,n/a,2015,2018,2019
+t_conf_atr,turbine characteristics qa/qc,turbine characteristic confidence (0-3),67814,see labels tab,1,3,3
+t_conf_loc,visual inspection qa/qc,location confidence (0 -3),67814,see labels tab,1,3,3
+t_img_date,visual inspection info,date of image used to visually verify turbine location,55873,n/a,n/a,n/a,n/a
+t_img_srce,visual inspection info,source of image used to visually verify turbine location,67814,n/a,n/a,n/a,n/a
+xlong,location,longitude (decimal degrees - NAD 83 datum),67814,n/a,-171.7131,-99.5356,144.7227
+ylat,location,latitude (decimal degrees - NAD 83 datum),67814,n/a,13.3894,39.055,66.8399
+,,,,,,,
+,,,,,,,
+Acronyms,,,,,,,
+ASN,Aeronautical Study Number,,,,,,
+AWEA,American Wind Energy Association,,,,,,
+DOF,Digital Obstacal File,,,,,,
+FAA,Federal Avaiation Administration,,,,,,
+LBNL,Lawrence Berkeley National Laboratory,,,,,,
+OE/AAA,Obstacle Evaluation / Airport Airspace Analysis,,,,,,
+ORS,Obstacle Repository System,,,,,,
+USGS,United States Geological Survey,,,,,,
+EIA,Energy Information Administration,,,,,,
