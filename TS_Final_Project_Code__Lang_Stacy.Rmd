@@ -8,6 +8,9 @@ output: html_document
 * Hybrid Car sales: https://afdc.energy.gov/data/10301
 * CO2 Emissions by Country: https://data.worldbank.org/indicator/EN.ATM.CO2E.PC?view=map
 
+* Turbine data citation:
+* Hoen, B.D., Diffendorfer, J.E., Rand, J.T., Kramer, L.A., Garrity, C.P., and Hunt, H.E., 2018, United States Wind Turbine Database (ver. 3.3, January 14, 2021): U.S. Geological Survey, American Clean Power Association, and Lawrence Berkeley National Laboratory data release, https://doi.org/10.5066/F7TX3DN0.
+
 # EDA / Notes for Initial Presentation: 
 a.	Identify yourself and your partner (if applicable).  Goal 1
 b.	Describe the Data Set / Time Series (Who, What, When, Where, Why and How) Goal 1
@@ -26,7 +29,7 @@ f.	Strategy / Plans for the rest of the analysis.
 library(tswge)
 library(dplyr)
 
-car_orig <- read.csv("../TimeSeries_Project/HybridCar.csv")
+car_orig <- read.csv("./HybridCar.csv")
 
 #Remove years that are majority blank
 car <- car_orig[40:60,]
@@ -41,6 +44,21 @@ plotts.wge(car$TotalSales)
 
 car_1 <- car_orig[40:57,]
 plotts.sample.wge(car_1$CO2)
+
+```
+
+
+
+
+
+```{r}
+turbine <- read.csv("./turbines.csv")
+
+turbine_tot = aggregate(turbine$p_tnum, by=list(Category=turbine$p_year), FUN=sum)
+turbine_tot
+plotts.sample.wge(turbine_tot$x)
+
+alldat = merge(car_orig, turbine_tot, by.x=c('USA'), by.y=c('Category'), all=TRUE)
 
 ```
 
