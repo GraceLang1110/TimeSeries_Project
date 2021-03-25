@@ -36,8 +36,37 @@ car <- car_orig[40:60,]
 
 #Rename column to something easier
 names(car)[names(car) == "CO2.emissions..metric.tons.per.capita."] <- "CO2"
+
+#Loading in the wind turbine data
+turbine <- read.csv("./turbines.csv")
+
+turbine_tot = aggregate(turbine$p_tnum, by=list(Category=turbine$p_year), FUN=sum)
+turbine_tot
+#Renaming wind turbine column
+names(turbine_tot)[names(turbine_tot) == "x"] <- "wind"
+plotts.sample.wge(turbine_tot$wind)
+
+#Jules - this merge didnt pull in the wind turbine data 
+#alldat = merge(car_orig, turbine_tot, by.x=c('USA'), by.y=c('Category'), all=TRUE)
+
+
+# Data cleanup
+
+#turbine data is missing 1993
+library(DataCombine)
+x<- turbine_tot[1:35,]
+x<- x %>% add_row(Category = 1993, wind = 0, .before = 13)
+#shorten to just the years with cross-over data
+y<- car_orig[22:57,1:3]
+#combine the 2 datasets
+alldata <- cbind(x,y)
+alldata <- select(alldata,-USA) #remove duplicate year column that was for reference
+#Rename column to something easier
+names(alldata)[names(alldata) == "CO2.emissions..metric.tons.per.capita."] <- "CO2"
 ```
 
+# Initial look at data plotted out
+Data cut differently by years where data is available
 ```{r}
 plotts.wge(car$CO2)
 plotts.wge(car$TotalSales)
@@ -45,22 +74,29 @@ plotts.wge(car$TotalSales)
 car_1 <- car_orig[40:57,]
 plotts.sample.wge(car_1$CO2)
 
+co2_total <- car_orig[1:57,]
+names(co2_total)[names(co2_total) == "CO2.emissions..metric.tons.per.capita."] <- "CO2"
+plotts.sample.wge(co2_total$CO2)
 ```
 
 
 
-
-
+# First take of some ARIMA Models
 ```{r}
-turbine <- read.csv("./turbines.csv")
+#ARIMA Model Plotting
+plotts.sample.wge(co2_total$CO2)
+aic5.wge(co2_total$CO2,p=0:10) #AIC shows an ARMA(1,1) s best fit 
+aic5.wge(co2_total$CO2, type="bic") #BIC shows an ARMA(1,1) s best fit 
 
-turbine_tot = aggregate(turbine$p_tnum, by=list(Category=turbine$p_year), FUN=sum)
-turbine_tot
-plotts.sample.wge(turbine_tot$x)
+#fit the model -- ARMA(1.1)
+est.arma.wge(co2_total$CO2, p=1, q=1)
+m1 = fore.arma.wge(co2_total$CO2,phi=0.9261945,theta = -0.5741199 , n.ahead = 5,lastn=TRUE,  plot=TRUE)
+mean((co2_total$CO2[53:57]-m1$f)^2)
+#ASE =  0.8390832
 
-alldat = merge(car_orig, turbine_tot, by.x=c('USA'), by.y=c('Category'), all=TRUE)
-
+#Using the ARMA(1,1) to plot the 5 years ahead
+fore.arma.wge(co2_total$CO2,phi=0.9261945,theta = -0.5741199 , n.ahead = 5,lastn=FALSE,  plot=TRUE)
+#Using the ARMA(1,1) to plot the 20 years ahead
+fore.arma.wge(co2_total$CO2,phi=0.9261945,theta = -0.5741199 , n.ahead = 20,lastn=FALSE,  plot=TRUE)
 ```
-
-
 
