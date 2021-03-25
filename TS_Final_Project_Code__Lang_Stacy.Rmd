@@ -28,6 +28,48 @@ f.	Strategy / Plans for the rest of the analysis.
 ```{r setup, include=FALSE}
 library(tswge)
 library(dplyr)
+library(DataCombine)
+```
+
+```{r}
+
+#rolling window ASE
+R_W_ASE = function(series, trainingSize, horizon=1, s=0, d=0, phis=0, thetas=0)
+{
+  trainingSize = 70
+  horizon=12
+  ASEHolder = numeric()
+  s = 10
+  d = 0
+  phis = phis
+  thetas = thetas
+  
+for( i in 1:(length(series)-(trainingSize + horizon) + 1))
+{
+  forecasts = fore.aruma.wge(series[i:(i+(trainingSize-1))], phi=phis, theta=thetas, s=s, d=d, n.ahead=horizon)
+  
+  ASE=mean((series[(trainingSize+i):(trainingSize + i + (horizon) - 1)] - forecasts$f)^2)
+  print('i :', i)
+  print('ASE :', ASE)
+  ASEHolder[i] = ASE
+}
+  ASEHolder
+  hist(ASEHolder)
+  windowedASE = mean(ASEHolder)
+  
+  print("The Summary Statistics for the Rolling Window ASE Are:")
+  print(summary(ASEHolder))
+  print(paste("The Rolling Window ASE is: ", WindowedASE))
+  return(WindowedASE)
+}
+
+
+
+
+```
+
+
+```{r}
 
 car_orig <- read.csv("./HybridCar.csv")
 
@@ -53,7 +95,6 @@ plotts.sample.wge(turbine_tot$wind)
 # Data cleanup
 
 #turbine data is missing 1993
-library(DataCombine)
 x<- turbine_tot[1:35,]
 x<- x %>% add_row(Category = 1993, wind = 0, .before = 13)
 #shorten to just the years with cross-over data
@@ -63,10 +104,16 @@ alldata <- cbind(x,y)
 alldata <- select(alldata,-USA) #remove duplicate year column that was for reference
 #Rename column to something easier
 names(alldata)[names(alldata) == "CO2.emissions..metric.tons.per.capita."] <- "CO2"
+
 ```
 
 # Initial look at data plotted out
 Data cut differently by years where data is available
+
+
+
+
+
 ```{r}
 plotts.wge(car$CO2)
 plotts.wge(car$TotalSales)
@@ -98,5 +145,39 @@ mean((co2_total$CO2[53:57]-m1$f)^2)
 fore.arma.wge(co2_total$CO2,phi=0.9261945,theta = -0.5741199 , n.ahead = 5,lastn=FALSE,  plot=TRUE)
 #Using the ARMA(1,1) to plot the 20 years ahead
 fore.arma.wge(co2_total$CO2,phi=0.9261945,theta = -0.5741199 , n.ahead = 20,lastn=FALSE,  plot=TRUE)
+
+#R_W_ASE(co2_total$CO2, phis=0.9261945, thetas=-0.5741199, trainingSize=20, horizon=5)
+```
+
+
+
+```{r}
+#remove a D term
+
+factor.wge(phi=c(rep(0, 9), 1))
+est.arma.wge(co2_total$CO2, p=14)
+
+#differencing a d=1 seasonal component
+co2_diff = artrans.wge(co2_total$CO2, phi.tr=c(1))
+#fit the differenced data
+aic5.wge(co2_diff) #AR(0,1) recommended
+co2_diff_est = est.arma.wge(co2_diff, 0, 1) #est AR(0,1) on differenced data
+co2_diff_est
+#check residuals
+ljung.wge(co2_diff_est$res, K=24) #p = 0.940, > 0.05
+ljung.wge(co2_diff_est$res, K=48) #p = 0.303, > 0.05
+#residuals appear to be whitened
+
+#plot a forecast of points
+fore.aruma.wge(x=co2_total$CO2, phi=0, theta=c(-0.5532092), d=1, s=0, n.ahead=5, lastn=FALSE)
+#20 years out
+fore.aruma.wge(x=co2_total$CO2, phi=0, theta=c(-0.5532092), d=1, s=0, n.ahead=20, lastn=FALSE)
+
+
+
+
+
+
+#R_W_ASE(co2_total$CO2, trainingSize=20, horizon=5, s=0, d=1, thetas=c(-0.5532092))
 ```
 
