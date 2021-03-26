@@ -25,14 +25,62 @@ stationary factors with standard deviation or variance of the white noise.
 f.	Strategy / Plans for the rest of the analysis.
 
 
+```{r}
+# install.packages('PerformanceAnalytics')
+
+```
+
+
+
 ```{r setup, include=FALSE}
 library(tswge)
 library(dplyr)
 library(DataCombine)
+library(PerformanceAnalytics)
 ```
 
-# Pulling in the datasets
+
 ```{r}
+
+
+#rolling window ASE
+R_W_ASE = function(series, trainingSize, horizon=1, s=0, d=0, phis=0, thetas=0)
+{
+  trainingSize=trainingSize
+  horizon=horizon
+  ASEHolder=numeric()
+  s=s
+  d=d
+  phis=phis
+  thetas=thetas
+
+for( i in 1:(length(series)-(trainingSize + horizon) + 1))
+{
+  forecasts = fore.aruma.wge(series[i:(i+(trainingSize-1))], phi=phis, theta=thetas, s=s, d=d, n.ahead=horizon)
+
+  ASE=mean((series[(trainingSize+i):(trainingSize + i + (horizon) - 1)] - forecasts$f)^2)
+  print(paste0('i: ', i))
+  print(paste0('ASE: ', ASE))
+  ASEHolder[i] = ASE
+}
+  ASEHolder
+  hist(ASEHolder)
+  WindowedASE = mean(ASEHolder)
+
+  print("The Summary Statistics for the Rolling Window ASE Are:")
+  print(summary(ASEHolder))
+  print(paste("The Rolling Window ASE is: ", WindowedASE))
+  return(WindowedASE)
+}
+
+
+
+
+```
+
+
+```{r}
+
 car_orig <- read.csv("./HybridCar.csv")
 
 #Remove years that are majority blank
@@ -50,6 +98,9 @@ turbine_tot
 names(turbine_tot)[names(turbine_tot) == "x"] <- "wind"
 plotts.sample.wge(turbine_tot$wind)
 
+#Jules - this merge didnt pull in the wind turbine data 
+#alldat = merge(car_orig, turbine_tot, by.x=c('USA'), by.y=c('Category'), all=TRUE)
+
 
 # Data cleanup
 
@@ -60,7 +111,7 @@ x<- x %>% add_row(Category = 1993, wind = 0, .before = 13)
 y<- car_orig[22:57,1:3]
 #combine the 2 datasets
 alldata <- cbind(x,y)
-alldata <- select(alldata,-USA) #remove duplicate year column that was for reference
+#alldata <- select(alldata,-USA) #remove duplicate year column that was for reference
 #Rename column to something easier
 names(alldata)[names(alldata) == "CO2.emissions..metric.tons.per.capita."] <- "CO2"
 
@@ -68,6 +119,11 @@ names(alldata)[names(alldata) == "CO2.emissions..metric.tons.per.capita."] <- "C
 
 # Initial look at data plotted out
 Data cut differently by years where data is available
+
+
+
+
+
 ```{r}
 plotts.wge(car$CO2)
 plotts.wge(car$TotalSales)
@@ -79,12 +135,12 @@ co2_total <- car_orig[1:57,]
 names(co2_total)[names(co2_total) == "CO2.emissions..metric.tons.per.capita."] <- "CO2"
 plotts.sample.wge(co2_total$CO2)
 
-factor.wge()
+length_CO2 = length(co2_total$CO2)
 ```
 
 
+
 # First take of some ARIMA Models
-## ARMA(1,1)
 ```{r}
 #ARIMA Model Plotting
 plotts.sample.wge(co2_total$CO2)
@@ -97,16 +153,43 @@ m1 = fore.arma.wge(co2_total$CO2,phi=0.9261945,theta = -0.5741199 , n.ahead = 5,
 mean((co2_total$CO2[53:57]-m1$f)^2)
 #ASE =  0.8390832
 
-#Using the ARMA(1,1) to plot the 5 years ahead
-fore.arma.wge(co2_total$CO2,phi=0.9261945,theta = -0.5741199 , n.ahead = 5,lastn=FALSE,  plot=TRUE)
-#Using the ARMA(1,1) to plot the 20 years ahead
-fore.arma.wge(co2_total$CO2,phi=0.9261945,theta = -0.5741199 , n.ahead = 20,lastn=FALSE,  plot=TRUE)
+# #Using the ARMA(1,1) to plot the 5 years ahead
+# fore.arma.wge(co2_total$CO2,phi=0.9261945,theta = -0.5741199 , n.ahead = 5,lastn=FALSE,  plot=TRUE)
+# #Using the ARMA(1,1) to plot the 20 years ahead
+# fore.arma.wge(co2_total$CO2,phi=0.9261945,theta = -0.5741199 , n.ahead = 20,lastn=FALSE,  plot=TRUE)
 
-#R_W_ASE(co2_total$CO2, phis=0.9261945, thetas=-0.5741199, trainingSize=20, horizon=5)
+
+#ASE's and Forecasts ================
+#5 years out
+n.ahead=5
+CO2_f = fore.aruma.wge(x=co2_total$CO2, phi=0.9261945, theta=-0.5741199, n.ahead=n.ahead, lastn=TRUE)
+#calculate ASE
+ASE_ar11 = mean((CO2_f$f - co2_total$CO2[(length_CO2-n.ahead):length_CO2])^2)
+#display ASE
+print(paste0("5 year: ", ASE_ar11))
+
+#forecast
+fore.aruma.wge(x=co2_total$CO2, phi=0.9261945, theta=-0.5741199, n.ahead=n.ahead, lastn=FALSE)
+
+#20 years out
+n.ahead=20
+CO2_f = fore.aruma.wge(x=co2_total$CO2, phi=0.9261945, theta=-0.5741199, n.ahead=n.ahead, lastn=TRUE)
+#calculate ASE
+ASE_ar11 = mean((CO2_f$f - co2_total$CO2[(length_CO2-n.ahead):length_CO2])^2)
+#display ASE
+print(paste0("20 year: ", ASE_ar11))
+
+#forecast
+fore.aruma.wge(x=co2_total$CO2, phi=0.9261945, theta=-0.5741199, n.ahead=n.ahead, lastn=FALSE)
+
+
+
+#rolling window ASE
+R_W_ASE(co2_total$CO2, phis=0.9261945, thetas=-0.5741199, trainingSize=20, horizon=5)
 ```
 
 
-## ARIMA (0,1,1)
+
 ```{r}
 #remove a D term
 
@@ -124,50 +207,34 @@ ljung.wge(co2_diff_est$res, K=24) #p = 0.940, > 0.05
 ljung.wge(co2_diff_est$res, K=48) #p = 0.303, > 0.05
 #residuals appear to be whitened
 
-#plot a forecast of points
-fore.aruma.wge(x=co2_total$CO2, phi=0, theta=c(-0.5532092), d=1, s=0, n.ahead=5, lastn=FALSE)
+
+
+#ASE's and Forecasts
+#5 years out
+n.ahead=5
+CO2_f = fore.aruma.wge(x=co2_total$CO2, phi=0, theta=c(-0.5532092), d=1, s=0, n.ahead=n.ahead, lastn=TRUE)
+#calculate ASE
+ASE_ar011 = mean((CO2_f$f - co2_total$CO2[(length_CO2-n.ahead):length_CO2])^2)
+#display ASE
+ASE_ar011
+
+#forecast
+fore.aruma.wge(x=co2_total$CO2, phi=0, theta=c(-0.5532092), d=1, s=0, n.ahead=n.ahead, lastn=FALSE)
+
 #20 years out
-fore.aruma.wge(x=co2_total$CO2, phi=0, theta=c(-0.5532092), d=1, s=0, n.ahead=20, lastn=FALSE)
+n.ahead=20
+CO2_f = fore.aruma.wge(x=co2_total$CO2, phi=0, theta=c(-0.5532092), d=1, s=0, n.ahead=n.ahead, lastn=TRUE)
+#calculate ASE
+ASE_ar011 = mean((CO2_f$f - co2_total$CO2[(length_CO2-n.ahead):length_CO2])^2)
+#display ASE
+ASE_ar011
+
+#forecast
+fore.aruma.wge(x=co2_total$CO2, phi=0, theta=c(-0.5532092), d=1, s=0, n.ahead=n.ahead, lastn=FALSE)
 
 
-
-
-
-
-#R_W_ASE(co2_total$CO2, trainingSize=20, horizon=5, s=0, d=1, thetas=c(-0.5532092))
-```
-
-# Rolling Window ASE
-```{r}
 
 #rolling window ASE
-R_W_ASE = function(series, trainingSize, horizon=1, s=0, d=0, phis=0, thetas=0)
-{
-  trainingSize = 70
-  horizon=12
-  ASEHolder = numeric()
-  s = 10
-  d = 0
-  phis = phis
-  thetas = thetas
-  
-for( i in 1:(length(series)-(trainingSize + horizon) + 1))
-{
-  forecasts = fore.aruma.wge(series[i:(i+(trainingSize-1))], phi=phis, theta=thetas, s=s, d=d, n.ahead=horizon)
-  
-  ASE=mean((series[(trainingSize+i):(trainingSize + i + (horizon) - 1)] - forecasts$f)^2)
-  print('i :', i)
-  print('ASE :', ASE)
-  ASEHolder[i] = ASE
-}
-  ASEHolder
-  hist(ASEHolder)
-  windowedASE = mean(ASEHolder)
-  
-  print("The Summary Statistics for the Rolling Window ASE Are:")
-  print(summary(ASEHolder))
-  print(paste("The Rolling Window ASE is: ", WindowedASE))
-  return(WindowedASE)
-}
-
+R_W_ASE(co2_total$CO2, trainingSize=20, horizon=5, s=0, d=1, thetas=c(-0.5532092), phis=0)
 ```
+
