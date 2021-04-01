@@ -4,46 +4,40 @@ author: "Grace Lang & Jules Stacy"
 date: "3/18/2021"
 output: html_document
 ---
+
+# Business Objective: 
+Taking care of our environment now will help our health and the health of future generations. Air pollution from vehicle CO2 Emissions can cause respiratory diseases and cancer. 
+
+In addition to emitting less CO2, hybrid cars have had sales on the rise in recent years due to their fuel efficiency and environmental benefits.
+
+Popularity of wind turbines have also increased over time as more landowners are willing to get them installed on their land for energy rights and economic benefit. 
+Our mission is to identify and provide insights of macro trends within the environmental industry. 
+
+
+
 # Data sources: 
 * Hybrid Car sales: https://afdc.energy.gov/data/10301
 * CO2 Emissions by Country: https://data.worldbank.org/indicator/EN.ATM.CO2E.PC?view=map
-
-* Turbine data citation:
-* Hoen, B.D., Diffendorfer, J.E., Rand, J.T., Kramer, L.A., Garrity, C.P., and Hunt, H.E., 2018, United States Wind Turbine Database (ver. 3.3, January 14, 2021): U.S. Geological Survey, American Clean Power Association, and Lawrence Berkeley National Laboratory data release, https://doi.org/10.5066/F7TX3DN0.
-
-# EDA / Notes for Initial Presentation: 
-a.	Identify yourself and your partner (if applicable).  Goal 1
-b.	Describe the Data Set / Time Series (Who, What, When, Where, Why and How) Goal 1
-c.	Stationary / Non-Stationary Goal 2
-d.	ACFs and Spectral Densities just to explore Goal 2
-e.	At least 2 (total) candidate ARMA / ARIMA models (univariate) Goal 2
-    a.	The models in factored form or at least separate the stationary and non-
-stationary factors with standard deviation or variance of the white noise.
-    b.	AIC
-    c.	ASE (Rolling window)
-    d.	Visualization of Forecasts (Short and Long Term / State and National) 
-f.	Strategy / Plans for the rest of the analysis.
+* Turbine data citation: https://doi.org/10.5066/F7TX3DN0
 
 
 ```{r}
 # install.packages('PerformanceAnalytics')
-
 ```
 
 
-
 ```{r setup, include=FALSE}
+## Packages to load:
 library(tswge)
 library(dplyr)
 library(DataCombine)
 library(PerformanceAnalytics)
+library(vars)
+library(nnfor)
 ```
 
-
+## Rolling Window ASE Function:
 ```{r}
-
-
-#rolling window ASE
 R_W_ASE = function(series, trainingSize, horizon=1, s=0, d=0, phis=0, thetas=0)
 {
   trainingSize=trainingSize
@@ -72,34 +66,25 @@ for( i in 1:(length(series)-(trainingSize + horizon) + 1))
   print(paste("The Rolling Window ASE is: ", WindowedASE))
   return(WindowedASE)
 }
-
-
-
-
 ```
 
-
+# Loading in data & cleanup:
 ```{r}
-
+#Loading in the CO2 Emission data
 car_orig <- read.csv("./HybridCar.csv")
-
 #Remove years that are majority blank
-car <- car_orig[40:60,]
+car <- car_orig[40:60,] #This may not be used in the modeling
 
 #Rename column to something easier
 names(car)[names(car) == "CO2.emissions..metric.tons.per.capita."] <- "CO2"
 
 #Loading in the wind turbine data
 turbine <- read.csv("./turbines.csv")
-
 turbine_tot = aggregate(turbine$p_tnum, by=list(Category=turbine$p_year), FUN=sum)
 turbine_tot
 #Renaming wind turbine column
 names(turbine_tot)[names(turbine_tot) == "x"] <- "wind"
 plotts.sample.wge(turbine_tot$wind)
-
-#Jules - this merge didnt pull in the wind turbine data 
-#alldat = merge(car_orig, turbine_tot, by.x=c('USA'), by.y=c('Category'), all=TRUE)
 
 
 # Data cleanup
@@ -111,19 +96,14 @@ x<- x %>% add_row(Category = 1993, wind = 0, .before = 13)
 y<- car_orig[22:57,1:3]
 #combine the 2 datasets
 alldata <- cbind(x,y)
-#alldata <- select(alldata,-USA) #remove duplicate year column that was for reference
+alldata <- select(alldata,-USA) #remove duplicate year column that was for reference
 #Rename column to something easier
 names(alldata)[names(alldata) == "CO2.emissions..metric.tons.per.capita."] <- "CO2"
-
 ```
 
+
 # Initial look at data plotted out
-Data cut differently by years where data is available
-
-
-
-
-
+Data cut differently by years to see if we need to subset the data for a specific timeframe. 
 ```{r}
 plotts.wge(car$CO2)
 plotts.wge(car$TotalSales)
@@ -139,8 +119,7 @@ length_CO2 = length(co2_total$CO2)
 ```
 
 
-
-# First take of some ARIMA Models
+# ARMA Model #1:
 ```{r}
 #ARIMA Model Plotting
 plotts.sample.wge(co2_total$CO2)
@@ -189,10 +168,9 @@ R_W_ASE(co2_total$CO2, phis=0.9261945, thetas=-0.5741199, trainingSize=20, horiz
 ```
 
 
-
+# ARIMA Model #2:
 ```{r}
 #remove a D term
-
 factor.wge(phi=c(rep(0, 9), 1))
 est.arma.wge(co2_total$CO2, p=14)
 
@@ -237,4 +215,44 @@ fore.aruma.wge(x=co2_total$CO2, phi=0, theta=c(-0.5532092), d=1, s=0, n.ahead=n.
 #rolling window ASE
 R_W_ASE(co2_total$CO2, trainingSize=20, horizon=5, s=0, d=1, thetas=c(-0.5532092), phis=0)
 ```
+
+# VAR Model with additions of the wind turbine & hybrid car sales data:
+```{r}
+# A selection of the data from the 3 datasets will be used for the VAR model. 
+  #All NA's will be replaced with 0
+alldata[is.na(alldata)] = 0
+length_all = length(alldata$CO2)
+
+#VARS
+VARselect(alldata$CO2, type = "const",season = NULL, exogen = NULL)
+#VARselect picks p=1 (using BIC SC(n))
+var1 = VAR(cbind(alldata$CO2,alldata$wind, alldata$TotalSales), type = "both", lag.max = NULL)
+AIC(var1)
+
+#5 year ahead
+n.ahead=5
+preds5 = predict(var1,n.ahead = n.ahead)
+#ASE
+mean((preds5$fcst$y1 - alldata$CO2[(length_all-n.ahead):length_all])^2) ##Getting an error here, not sure why, i was trying to use your length built in function so it's easier for 20 year
+
+#Plotting out the 5 Year
+plot(seq(1,36,1),alldata$CO2,type="b", xlim=c(1,41), ylab="CO2 Emissions",main="VAR - 5 Year Forecast")
+points(seq(37,41,1),preds5$fcst$y1[,1],type="b",pch=15)
+
+```
+
+# MLP Model: 
+```{r}
+co2_all = ts(alldata$CO2[1:36], start =c(1981,1),frequency =1)
+
+#Using all the data
+set.seed(2)
+fit.mlp = mlp(co2_all,reps = 50,comb="mean")
+fit.mlp #MSE = 0.074
+
+#Forecasting out 5 years ahead
+fore.mlp = forecast(fit.mlp,h=5)
+plot(fore.mlp, ylab="CO2 Emissions",main="MLP - 5 Year Forecast")
+```
+
 
