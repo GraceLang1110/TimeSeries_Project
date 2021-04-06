@@ -96,7 +96,7 @@ x<- x %>% add_row(Category = 1993, wind = 0, .before = 13)
 y<- car_orig[22:57,1:3]
 #combine the 2 datasets
 alldata <- cbind(x,y)
-alldata <- select(alldata,-USA) #remove duplicate year column that was for reference
+#alldata <- select(alldata,-USA) #remove duplicate year column that was for reference
 #Rename column to something easier
 names(alldata)[names(alldata) == "CO2.emissions..metric.tons.per.capita."] <- "CO2"
 ```
@@ -217,6 +217,8 @@ R_W_ASE(co2_total$CO2, trainingSize=20, horizon=5, s=0, d=1, thetas=c(-0.5532092
 ```
 
 # VAR Model with additions of the wind turbine & hybrid car sales data:
+
+## Question for Sadler - i run the ASE off of past data, but then i have to reforecast with it looking ahead?
 ```{r}
 # A selection of the data from the 3 datasets will be used for the VAR model. 
   #All NA's will be replaced with 0
@@ -227,32 +229,94 @@ length_all = length(alldata$CO2)
 VARselect(alldata$CO2, type = "const",season = NULL, exogen = NULL)
 #VARselect picks p=1 (using BIC SC(n))
 var1 = VAR(cbind(alldata$CO2,alldata$wind, alldata$TotalSales), type = "both", lag.max = NULL)
-AIC(var1)
+  AIC(var1)
 
 #5 year ahead
 n.ahead=5
 preds5 = predict(var1,n.ahead = n.ahead)
 #ASE
-mean((preds5$fcst$y1 - alldata$CO2[(length_all-n.ahead):length_all])^2) ##Getting an error here, not sure why, i was trying to use your length built in function so it's easier for 20 year
+mean((preds5$fcst$y1 - alldata$CO2[(length_all-(n.ahead-1)):length_all])^2)
+
+#20 year ahead
+n.ahead=20
+preds20 = predict(var1,n.ahead = n.ahead)
+#ASE
+mean((preds20$fcst$y1 - alldata$CO2[(length_all-(n.ahead-1)):length_all])^2)
 
 #Plotting out the 5 Year
 plot(seq(1,36,1),alldata$CO2,type="b", xlim=c(1,41), ylab="CO2 Emissions",main="VAR - 5 Year Forecast")
 points(seq(37,41,1),preds5$fcst$y1[,1],type="b",pch=15)
 
+#Plotting out the 20 Year
+plot(seq(1,36,1),alldata$CO2,type="b", xlim=c(1,56), ylim =c(14,21), ylab="CO2 Emissions",main="VAR - 20 Year Forecast")
+points(seq(37,56,1),preds20$fcst$y1[,1],type="b",pch=15)
+
+#rolling window ASE
+#R_W_ASE(co2_total$CO2, trainingSize=20, horizon=5, s=0, d=1, thetas=c(-0.5532092), phis=0)
 ```
 
-# MLP Model: 
+# Univariate MLP Model: 
 ```{r}
 co2_all = ts(alldata$CO2[1:36], start =c(1981,1),frequency =1)
-
-#Using all the data
+co2_5 = ts(alldata$CO2[1:31], start =c(1981,1),frequency =1)
+co2_20 = ts(alldata$CO2[1:16], start =c(1981,1),frequency =1)
+##-----------------------------------------------
+##        -- Checking it with Mean
+##-----------------------------------------------
+#Using data minus 5 years
 set.seed(2)
-fit.mlp = mlp(co2_all,reps = 50,comb="mean")
-fit.mlp #MSE = 0.074
+fit.mlp = mlp(co2_5,reps = 50,comb="mean")
+fit.mlp 
+plot(fit.mlp)
 
 #Forecasting out 5 years ahead
 fore.mlp = forecast(fit.mlp,h=5)
 plot(fore.mlp, ylab="CO2 Emissions",main="MLP - 5 Year Forecast")
+
+# 5yr ASE
+mean((fore.mlp$mean - co2_all[32:36])^2)
+##-----------------------------------------------
+#Using data minus 20 years
+set.seed(2)
+fit.mlp2 = mlp(co2_20,reps = 50,comb="mean")
+fit.mlp2 
+plot(fit.mlp2)
+
+#Forecasting out 20 years ahead
+fore.mlp2 = forecast(fit.mlp,h=20)
+plot(fore.mlp2, ylab="CO2 Emissions",main="MLP - 20 Year Forecast")
+
+# 20 yr ASE
+mean((fore.mlp2$mean - co2_all[17:36])^2)
+##-----------------------------------------------
+##        -- Checking it with Median 
+##-----------------------------------------------
+#Using data minus 5 years
+set.seed(2)
+fit.mlp = mlp(co2_5,reps = 50,comb="median")
+fit.mlp 
+plot(fit.mlp)
+
+#Forecasting out 5 years ahead
+fore.mlp = forecast(fit.mlp,h=5)
+plot(fore.mlp, ylab="CO2 Emissions",main="MLP - 5 Year Forecast")
+
+# 5yr ASE
+mean((fore.mlp$mean - co2_all[32:36])^2)
+##-----------------------------------------------
+#Using data minus 20 years
+set.seed(2)
+fit.mlp2 = mlp(co2_20,reps = 50,comb="median")
+fit.mlp2 
+plot(fit.mlp2)
+
+#Forecasting out 20 years ahead
+fore.mlp2 = forecast(fit.mlp,h=20)
+plot(fore.mlp2, ylab="CO2 Emissions",main="MLP - 20 Year Forecast")
+
+# 20 yr ASE
+mean((fore.mlp2$mean - co2_all[17:36])^2)
+```
 ```
 
 
