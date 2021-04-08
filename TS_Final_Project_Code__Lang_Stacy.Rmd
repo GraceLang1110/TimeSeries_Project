@@ -331,6 +331,14 @@ fore.aruma.wge(x=alldata$CO2, phi=c(-0.4536403), theta=c(-0.8277382), d=1, s=0, 
 
 The VARselect method does not like working with the data, and suggests that AIC is negative infinity for lags above 7. When modeled at lag 7, the forecasts dropped to values far below zero, at magnitudes of eight times the maximal value in the dataset. This seems unreasonable, so a lower lag value will be selected.
 ```{r}
+#Looking to see if there is any cross correlation with the 2 additional variables
+#running(alldata$CO2, alldata$wind, fun=cor)
+ccf( alldata$wind,alldata$CO2,main="CO2 Emissions to Wind Turbines")
+#There is strong correlation between Wind Turbines being a leading indicator of CO2 emissions from 0-4 years.
+ccf(alldata$TotalSales,alldata$CO2,main="CO2 Emissions to Hybrid Car Sales")
+#There is strong correlation that it takes 0 - 8 years for Hybrid car sales to make any changes on CO2 sales
+
+#================================
 #combine data into single dataframe
 df_all3 = cbind(CO2=alldata$CO2, wind=alldata$wind, cars=alldata$TotalSales)
 
