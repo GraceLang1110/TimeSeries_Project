@@ -261,16 +261,17 @@ armafore5=fore.aruma.wge(x=alldata$CO2, phi=0.9261945, theta=-0.5741199, n.ahead
 n.ahead=20
 CO2_f20 = fore.aruma.wge(x=alldata$CO2, phi=0.9261945, theta=-0.5741199, n.ahead=n.ahead, lastn=TRUE)
 #calculate ASE
-StaticASE(series=alldata$CO2, forecast=CO2_f5$f, n.ahead=n.ahead) 
-#"20 year ASE: 4.84096667545707" 
+StaticASE(series=alldata$CO2, forecast=CO2_f20$f, n.ahead=n.ahead) 
+#"20 year ASE: 2.69083287859986" 
 
 #forecast
 armafore20 = fore.aruma.wge(x=alldata$CO2, phi=0.9261945, theta=-0.5741199, n.ahead=n.ahead, lastn=FALSE) #also used in ensemble
 
 
 
+
 #rolling window ASE
-#R_W_ASE(alldata$CO2, phis=0.9261945, thetas=-0.5741199, trainingSize=20, horizon=5)
+R_W_ASE(alldata$CO2, phis=0.9261945, thetas=-0.5741199, trainingSize=20, horizon=5)
 #"The Rolling Window ASE is:  1.60880823919367"
 ```
 
@@ -319,14 +320,16 @@ fore.aruma.wge(x=alldata$CO2, phi=c(-0.4536403), theta=c(-0.8277382), d=1, s=0, 
 
 
 
-#rolling window ASE
-#R_W_ASE(co2_total$CO2, trainingSize=20, horizon=5, s=0, d=1, thetas=c(-0.5532092), phis=c(-0.4536403))
-#"The Rolling Window ASE is:  0.992686708185353"
+#rolling window ASE==============
+R_W_ASE(alldata$CO2, trainingSize=20, horizon=5, s=0, d=1, thetas=c(-0.8277382), phis=c(-0.4536403))
+#"The Summary Statistics for the Rolling Window ASE Are:"
+#   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+#0.05133 0.31666 1.04533 1.36813 2.12081 4.68873 
+# "The Rolling Window ASE is:  1.36812953793958"
 ```
 
 # VAR Model with additions of the wind turbine & hybrid car sales data:
 
-## Question for Sadler - i run the ASE off of past data, but then i have to reforecast with it looking ahead?
 
 
 The VARselect method does not like working with the data, and suggests that AIC is negative infinity for lags above 7. When modeled at lag 7, the forecasts dropped to values far below zero, at magnitudes of eight times the maximal value in the dataset. This seems unreasonable, so a lower lag value will be selected.
@@ -378,7 +381,7 @@ points(seq((length(alldata[,1])-4), length(alldata[,1]), 1), varase5, type='b', 
 #Forecasting
 #5 year 
 StaticASE(series=alldata$CO2, forecast=varase5, n.ahead=5) 
-#"5 year ASE: 3.67002304400658"
+#"5 year ASE: 0.933663787729373"
 
 
 #20 year ASE calculations ---------------
@@ -393,7 +396,6 @@ plot(seq(1, length(alldata[,1]), 1), alldata$CO2, type='b')
 #the plot thickens (adding prediction points)
 points(seq((length(alldata[,1])-19), length(alldata[,1]), 1), varase20, type='b', pch=5)
 
-all3_20
 
 # 20 year
 StaticASE(series=alldata$CO2, forecast=varase20, n.ahead=20) 
@@ -405,24 +407,33 @@ StaticASE(series=alldata$CO2, forecast=varase20, n.ahead=20)
 n.ahead=5
 preds5 = predict(varmodel,n.ahead = n.ahead) #forecast the next 5 years 
 varfore5 = preds5$fcst$CO2[,1] #also used in ensemble modeling
+preds5
+#confidence bounds
+lower5 = preds5$fcst$CO2[,2]
+upper5 = preds5$fcst$CO2[,3]
 
 #20 year ahead
 n.ahead=20
 preds20 = predict(varmodel,n.ahead = n.ahead) #forecast the next 20 years
 varfore20 = preds20$fcst$CO2[,1] #used in ensemble modeling
+#confidence bounds
+lower20 = preds20$fcst$CO2[,2]
+upper20 = preds20$fcst$CO2[,3]
 
 #Plotting =============================
 #Plotting out the 5 Year forecast
-plot(seq(1,36,1),alldata$CO2,type="b", xlim=c(1,41), ylab="CO2 Emissions",main="VAR - 5 Year Forecast")
+plot(seq(1,36,1),alldata$CO2,type="b", xlim=c(1,41), ylim=c(12, 21), ylab="CO2 Emissions",main="VAR - 5 Year Forecast")
 points(seq(37,41,1),varfore5,type="b",pch=15)
+lines(seq(37, 41, 1), lower5, lty=4, pch=15)
+lines(seq(37, 41, 1), upper5, lty=4, pch=15)
 
 #Plotting out the 20 Year forecast
-plot(seq(1,36,1),alldata$CO2,type="b", xlim=c(1,56), ylim =c(12,22), ylab="CO2 Emissions",main="VAR - 20 Year Forecast")
+plot(seq(1,36,1),alldata$CO2,type="b", xlim=c(1,56), ylim =c(10,21), ylab="CO2 Emissions",main="VAR - 20 Year Forecast")
 points(seq(37,56,1),varfore20,type="b",pch=15)
+lines(seq(37, 56, 1), lower20, lty=4, pch=15)
+lines(seq(37, 56, 1), upper20, lty=4, pch=15)
 
-#rolling window ASE
-#R_W_ASE(co2_total$CO2, trainingSize=20, horizon=5, s=0, d=1, thetas=c(-0.5532092), phis=0)
-
+#Rolling Window ASE =================
 #rolling window ASE
 R_W_ASE_VAR(alldata$CO2, trainingSize=20, horizon=5, model=varmodel)
 
@@ -452,9 +463,12 @@ plot(fit.mlp)
 #Forecasting out 5 years ahead
 fore.mlp = forecast(fit.mlp,h=5)
 plot(fore.mlp, ylab="CO2 Emissions",main="MLP - 5 Year Forecast")
+lines(seq(1981,2016,1),alldata$CO2,col="black")
 
 # 5yr ASE
-mean((fore.mlp$mean - co2_all[32:36])^2)
+mlpase5 = mean((fore.mlp$mean - co2_all[32:36])^2)
+print(paste0("The 5 year ASE for the MLP model is: ", mlpase5))
+
 ##-----------------------------------------------
 #Using data minus 20 years
 set.seed(2)
@@ -465,9 +479,12 @@ plot(fit.mlp2)
 #Forecasting out 20 years ahead
 fore.mlp2 = forecast(fit.mlp,h=20)
 plot(fore.mlp2, ylab="CO2 Emissions",main="MLP - 20 Year Forecast")
+lines(seq(1981,2016,1),alldata$CO2,col="black")
 
 # 20 yr ASE
-mean((fore.mlp2$mean - co2_all[17:36])^2)
+mlpase20 = mean((fore.mlp2$mean - co2_all[17:36])^2)
+print(paste0("The 5 year ASE for the MLP model is: ", mlpase20))
+
 ##-----------------------------------------------
 ##        -- Checking it with Median 
 ##-----------------------------------------------
@@ -480,6 +497,7 @@ plot(fit.mlp)
 #Forecasting out 5 years ahead
 fore.mlp = forecast(fit.mlp,h=5)
 plot(fore.mlp, ylab="CO2 Emissions",main="MLP - 5 Year Forecast")
+lines(seq(1981,2016,1),alldata$CO2,col="black")
 
 # 5yr ASE
 mlpase5 = mean((fore.mlp$mean - co2_all[32:36])^2)
@@ -494,14 +512,161 @@ plot(fit.mlp2)
 #Forecasting out 20 years ahead
 fore.mlp2 = forecast(fit.mlp,h=20)
 plot(fore.mlp2, ylab="CO2 Emissions",main="MLP - 20 Year Forecast")
+lines(seq(1981,2016,1),alldata$CO2,col="black")
 
 # 20 yr ASE
 mlpase20 = mean((fore.mlp2$mean - co2_all[17:36])^2)
 print(paste0("The 20 year ASE for the MLP model is: ", mlpase20))
 ```
+
+
+
+# Multivariate MLP Model: 
+```{r}
+#building datasets
+co2_all = ts(alldata$CO2[1:36], start =c(1981,1),frequency =1)
+co2_5 = ts(alldata$CO2[1:31], start =c(1981,1),frequency =1)
+co2_20 = ts(alldata$CO2[1:16], start =c(1981,1),frequency =1)
+
+#building exogenous variables
+exog_all <- data.frame(wind=ts(alldata$wind), cars=ts(alldata$TotalSales))
+exog_wind <- data.frame(wind=ts(alldata$wind))
+
+
+##-----------------------------------------------
+##        -- Checking it with Mean
+##-----------------------------------------------
+#Using data minus 5 years
+set.seed(2)
+fit.mlp = mlp(co2_5,reps = 50,comb="mean", xreg=exog_all)
+fit.mlp 
+plot(fit.mlp)
+
+
+#Forecasting out 5 years ahead
+fore.mlp = forecast(fit.mlp,h=5, xreg=exog_all)
+plot(fore.mlp, ylab="CO2 Emissions",main="MLP - 5 Year Forecast")
+lines(seq(1981,2016,1),alldata$CO2,col="black")
+
+# 5yr ASE
+mlpase5 = mean((fore.mlp$mean - co2_all[32:36])^2)
+print(paste0("The 5 year ASE for the MLP model is: ", mlpase5))
+"The 5 year ASE for the MLP model is: 0.0457591764577123"
+##-----------------------------------------------
+#Using data minus 20 years
+set.seed(2)
+fit.mlp2 = mlp(co2_20,reps = 50,comb="mean", xreg=exog_wind)
+fit.mlp2
+plot(fit.mlp2)
+
+#?mlp
+
+#Forecasting out 20 years ahead
+fore.mlp2 = forecast(fit.mlp2,h=20, xreg=exog_wind)
+plot(fore.mlp2, ylab="CO2 Emissions",main="MLP - 20 Year Forecast")
+lines(seq(1981,2016,1),alldata$CO2,col="black")
+
+# 20 yr ASE
+mlpase20 = mean((fore.mlp2$mean - co2_all[17:36])^2)
+print(paste0("The 20 year ASE for the MLP model is: ", mlpase20))
+#"The 20 year ASE for the MLP model is: 2.61147601416475"
+##-----------------------------------------------
+##        -- Checking it with Median 
+##-----------------------------------------------
+#Using data minus 5 years
+set.seed(2)
+fit.mlp = mlp(co2_5,reps = 50,comb="median", xreg=exog_all)
+fit.mlp 
+plot(fit.mlp)
+
+#Forecasting out 5 years ahead
+fore.mlp = forecast(fit.mlp,h=5, xreg=exog_all)
+plot(fore.mlp, ylab="CO2 Emissions",main="MLP - 5 Year Forecast")
+lines(seq(1981,2016,1),alldata$CO2,col="black")
+
+# 5yr ASE
+mlpase5 = mean((fore.mlp$mean - co2_all[32:36])^2)
+print(paste0("The 5 year ASE for the MLP model is: ", mlpase5))
+#"The 5 year ASE for the MLP model is: 0.116463719071736"
+##-----------------------------------------------
+#Using data minus 20 years
+set.seed(2)
+fit.mlp2 = mlp(co2_20,reps = 50,comb="median", xreg=exog_wind)
+fit.mlp2 
+plot(fit.mlp2)
+
+#Forecasting out 20 years ahead
+fore.mlp2 = forecast(fit.mlp2,h=20, xreg=exog_wind)
+plot(fore.mlp2, ylab="CO2 Emissions",main="MLP - 20 Year Forecast", ylim=c(12, 22))
+lines(seq(1981,2016,1),alldata$CO2,col="black")
+
+# 20 yr ASE
+mlpase20 = mean((fore.mlp2$mean - co2_all[17:36])^2)
+print(paste0("The 20 year ASE for the MLP model is: ", mlpase20))
+#"The 20 year ASE for the MLP model is: 2.57697447558644"
+
+```
+
+
+
+
+```{r}
+R_W_ASE_MLP_mult = function(series, trainingSize, comb, xreg, horizon=1)
+{
+  trainingSize=trainingSize
+  horizon=horizon
+  xreg=xreg
+  comb=comb
+  ASEHolder=numeric()
+
+
+for( i in 1:(length(series)-(trainingSize + horizon) + 1))
+{
+
+  #forecasts = fore.aruma.wge(series[i:(i+(trainingSize-1))], phi=phis, theta=thetas, s=s, d=d, n.ahead=horizon, plot=FALSE)
+
+  #develop a forecast
+  set.seed(2)
+  fit.mlp = mlp(series, reps = 50, comb=comb, xreg=xreg)
+  fore.mlp = forecast(fit.mlp, h=horizon, xreg=xreg)
+  
+  ASE=mean((series[(trainingSize+i):(trainingSize + i + (horizon) - 1)] - forecasts)^2)
+  print(paste0('i: ', i))
+  print(paste0('ASE: ', ASE))
+  ASEHolder[i] = ASE
+}
+  ASEHolder
+  hist(ASEHolder)
+  WindowedASE = mean(ASEHolder)
+
+  print("The Summary Statistics for the Rolling Window ASE Are:")
+  print(summary(ASEHolder))
+  print(paste("The Rolling Window ASE is: ", WindowedASE))
+  return(WindowedASE)
+}
+
+
+```
+
+
+
+
+
 #Ensemble forecast
 A forecast was developed using an averaging ensemble of two models: the VAR model and the ARMA model.
 ```{r}
+#building confidence intervals ========
+arma5U = armafore5$ul
+arma5L = armafore5$ll
+arma20U = armafore20$ul
+arma20L = armafore20$ll
+
+ens5U = (upper5 + armafore5$ul)/2
+ens5L = (lower5 + armafore5$ll)/2
+ens20U = (upper20 + armafore20$ul)/2
+ens20L = (lower20 + armafore20$ll)/2
+
+
 #Ensemble ASE =======================
 #average the ASE forecasts from the ARMA and VAR models
 Ensase5 = (CO2_f5$f + varase5) / 2
@@ -530,12 +695,16 @@ EnsFore20 = (armafore20$f + varfore20) / 2
 
 #Plotting =====================
 #Plot the 5-year ensemble forecast
-plot(seq(1,36,1),alldata$CO2,type="b", xlim=c(1,41), ylab="CO2 Emissions",main="Ensemble - 5 Year Forecast")
+plot(seq(1,36,1),alldata$CO2,type="b", xlim=c(1,41), ylim=c(12, 21), ylab="CO2 Emissions", xlab="years", main="Ensemble - 5 Year Forecast")
 points(seq(37,41,1),EnsFore5,type="b",pch=15)
+lines(seq(37,41,1), ens5U, lty=4, pch=15)
+lines(seq(37,41,1), ens5L, lty=4, pch=15)
 
 #Plot the 20-year ensemble forecast
-plot(seq(1,36,1),alldata$CO2,type="b", xlim=c(1,56), ylab="CO2 Emissions",main="Ensemble - 20 Year Forecast")
+plot(seq(1,36,1),alldata$CO2,type="b", xlim=c(1,56), ylim=c(12, 21), ylab="CO2 Emissions", xlab="years",main="Ensemble - 20 Year Forecast")
 points(seq(37,56,1),EnsFore20,type="b",pch=15)
+lines(seq(37,56,1), ens20U, lty=4, pch=15)
+lines(seq(37,56,1), ens20L, lty=4, pch=15)
 
 #Rolling Window ASE ==================
 #Rolling Window ASE for the Ensemble Model
