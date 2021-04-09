@@ -21,7 +21,7 @@ Our mission is to identify and provide insights of macro trends within the envir
 * Turbine data citation: https://doi.org/10.5066/F7TX3DN0
 
 
-```{r}
+```{r, include=FALSE}
 # install.packages('PerformanceAnalytics')
 ```
 
@@ -221,7 +221,6 @@ car_1 <- car_orig[40:57,]
 plotts.sample.wge(car_1$CO2)
 
 plotts.sample.wge(alldata$CO2)
-
 ```
 
 
